@@ -9,30 +9,40 @@ from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from .serializers import CountrySerializer, StateSerializer, CitySerializer, \
     UserSerializer, UserLoginSerializer, ChangePasswordSerializer, PasswordResetSerializer,\
-    PasswordResetConfirmSerializer
+    PasswordResetConfirmSerializer, EditProfileSerializer
 
 class CountryView(viewsets.ModelViewSet):
-    http_method_names = ['post', ]
+    http_method_names = ['post', 'get']
     serializer_class = CountrySerializer
     queryset = Country.objects.all()
     permission_classes = (permissions.AllowAny,)
 
-    def create(self,request, *args, **kwargs):
-        serializer = self.serializer_class(data=self.request.data)
-        serializer.is_valid(raise_exception=True)
-        countryName = serializer.data.get('countryName')
-        countryObj = Country()
-        countryObj.countryName=countryName
-        countryObj.save()
-        return Response(data={'status':status.HTTP_200_OK},
-                        status=status.HTTP_200_OK)
+    def list(self, request, **kwargs):
+        countryObj = Country.objects.all()
+        country_name = countryObj.values('countryName')
+        return Response(data={'data': country_name, "status" :status.HTTP_200_OK},status=status.HTTP_200_OK)
+
+    # def create(self,request, *args, **kwargs):
+    #     serializer = self.serializer_class(data=self.request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     countryName = serializer.data.get('countryName')
+    #     countryObj = Country()
+    #     countryObj.countryName=countryName
+    #     countryObj.save()
+    #     return Response(data={'status':status.HTTP_200_OK},
+    #                     status=status.HTTP_200_OK)
 
 
 class StateView(viewsets.ModelViewSet):
-    http_method_names = ['post', ]
+    http_method_names = ['post','get' ]
     serializer_class = StateSerializer
     queryset = State.objects.all()
     permission_classes = (permissions.AllowAny,)
+
+    def list(self, request, **kwargs):
+        stateObj = State.objects.all()
+        state_name = stateObj.values('stateName')
+        return Response(data={'data': state_name, "status": status.HTTP_200_OK}, status=status.HTTP_200_OK)
 
     def create(self,request, *args, **kwargs):
         serializer = self.serializer_class(data=self.request.data)
@@ -49,10 +59,15 @@ class StateView(viewsets.ModelViewSet):
 
 
 class CityView(viewsets.ModelViewSet):
-    http_method_names = ['post', ]
+    http_method_names = ['post', 'get']
     serializer_class = CitySerializer
     queryset = City.objects.all()
     permission_classes = (permissions.AllowAny,)
+
+    def list(self, request, **kwargs):
+        cityObj = City.objects.all()
+        city_name = cityObj.values('cityName')
+        return Response(data={'data': city_name, "status": status.HTTP_200_OK}, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=self.request.data)
@@ -96,7 +111,7 @@ class SignupView(viewsets.ModelViewSet):
         user.cityName = city_name
         user.save()
         token, created = Token.objects.get_or_create(user=user)
-        return Response(data={'status': status.HTTP_200_OK,'token': token.key},
+        return Response(data={'status': status.HTTP_200_OK,'token':token.key},
                         status=status.HTTP_200_OK)
 
 class LoginView(viewsets.ModelViewSet):
@@ -110,12 +125,14 @@ class LoginView(viewsets.ModelViewSet):
             uname = serializer.data.get('username')
             username = User.objects.get(username = uname)
             pwd = serializer.data.get('password')
+
             user = authenticate(username=username, password=pwd)
+            token, created = Token.objects.get_or_create(user=user)
             if not user:
                 return Response({'message': 'Invalid credentials'},
                                 status=status.HTTP_401_UNAUTHORIZED)
             else :
-                return Response(data={'message': 'Success'},status=status.HTTP_200_OK)
+                return Response(data={'status': status.HTTP_200_OK,'message': 'Success','token': token.key},status=status.HTTP_200_OK)
 
 
 class ChangePasswordView(viewsets.ViewSet):
@@ -132,6 +149,53 @@ class ChangePasswordView(viewsets.ViewSet):
         return Response(data={'message': 'Password changed successfully'}, status=status.HTTP_200_OK)
 
 
+class EditProfileView(viewsets.ViewSet):
+    serializer_class = EditProfileSerializer
+    http_method_names = ['get','post']
+    permission_classes = (permissions.IsAuthenticated, )
+
+    def list(self, request, **kwargs):
+        user = self.request.user
+        userObj = User.objects.get(username=user)
+        username = userObj.username
+        phone = userObj.phone
+        email = userObj.email
+        countryId = userObj.countryName_id
+        country_name = Country.objects.filter(id=countryId).values('countryName')
+        countryName = country_name[0]['countryName']
+        stateId = userObj.stateName_id
+        state_name = State.objects.filter(id=stateId).values('stateName')
+        stateName = state_name[0]['stateName']
+        cityId = userObj.cityName_id
+        city_name = City.objects.filter(id=cityId).values('cityName')
+        cityName = city_name[0]['cityName']
+        return Response(data={'username':username , 'phone':phone,\
+                              'email':email,'country':countryName,'state':stateName,\
+                              'city':cityName,"status": status.HTTP_200_OK}, status=status.HTTP_200_OK,)
+
+    def create(self, request, *args, **kwargs):
+        user = self.request.user
+        serializer = self.serializer_class(data=self.request.data)
+        serializer.is_valid(raise_exception=True)
+        username = serializer.data.get('username')
+        email = serializer.data.get('email')
+        phone = serializer.data.get('phone')
+        country = serializer.data.get('country')
+        state = serializer.data.get('state')
+        city = serializer.data.get('city')
+        userObj = User.objects.get(username=user)
+        userObj.email = email
+        userObj.username = username
+        userObj.phone = phone
+        countryObj = Country.objects.filter(countryName = country)
+        userObj.countryName_id = countryObj[0].id
+        stateObj = State.objects.filter(stateName=state)
+        userObj.stateName_id = stateObj[0].id
+        cityObj = City.objects.filter(cityName=city)
+        userObj.cityName_id = cityObj[0].id
+        userObj.save()
+        return Response(data={'message': 'success','status':status.HTTP_200_OK}, status=status.HTTP_200_OK)
+
 class PasswordResetView(viewsets.ViewSet):
     serializer_class = PasswordResetSerializer
     permission_classes = (permissions.AllowAny,)
@@ -141,7 +205,7 @@ class PasswordResetView(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         email = serializer.data.get('email')
         ut.password_reset_link_email(email, request)
-        return Response(data={"message": "Password reset email has been sent."}, status=status.HTTP_200_OK)
+        return Response(data={'status': status.HTTP_200_OK,"message": "Password reset email has been sent."}, status=status.HTTP_200_OK)
 
 
 class PasswordResetConfirmView(APIView):
@@ -149,7 +213,7 @@ class PasswordResetConfirmView(APIView):
         token = request.GET.get('token')
         user = User.objects.filter(rp_otp=token).first()
         if user:
-            return Response(data={'message': 'Success', 'token': token}, status=status.HTTP_200_OK)
+            return Response(data={'message': 'Success', 'token': 748875}, status=status.HTTP_200_OK)
         else:
             return Response(data={'message': 'User not found'}, status=status.HTTP_400_BAD_REQUEST)
 

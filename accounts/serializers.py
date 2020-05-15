@@ -94,6 +94,15 @@ class ChangePasswordSerializer(serializers.Serializer):
         return old_password
 
 
+class EditProfileSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+    phone = serializers.CharField(required=True)
+    email = serializers.CharField(required=True)
+    country = serializers.CharField(required=True)
+    state = serializers.CharField(required=True)
+    city = serializers.CharField(required=True)
+
+
 class PasswordResetSerializer(serializers.Serializer):
     email = serializers.EmailField()
 

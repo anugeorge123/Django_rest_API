@@ -13,31 +13,10 @@ def otp_generation():
     range_end = (10**6)-1
     return randint(range_start, range_end)
 
-def password_reset_email(email, request):
-    user= User.objects.filter(email=email).first()
-    secret = pyotp.random_base32()
-    totp = pyotp.TOTP(secret)
-    otp = otp_generation()
-    user.otp = otp
-    user.save()
-    from_email = settings.EMAIL_HOST_USER
-    to = email
-    message = render_to_string('mail/password-reset-template.html', {
-        'otp': otp,
-        'mobile':True,
-        'use_https': request.is_secure(),
-        'site': get_current_site(request)
-
-    })
-    msg = EmailMessage('Password Reset Email - Sample Project', message, from_email, [to])
-    msg.content_subtype = "html"
-    msg.send()
-
 
 def password_reset_link_email(email, request):
     user= User.objects.filter(email=email).first()
     secret = pyotp.random_base32()
-    totp = pyotp.TOTP(secret)
     otp = otp_generation()
     user.rp_otp = otp
     user.save()
@@ -45,7 +24,8 @@ def password_reset_link_email(email, request):
     to = email
     message = render_to_string('mail/password-reset-template.html', {
         'otp': otp,
-        'reset_password_url': "127.0.0.1:8000/accounts/password-reset-confirm/",
+        'reset_password_url': "http://localhost:3000/resetpassword-confirm/?token="+str(otp).format(
+            request.META['HTTP_HOST'], otp),
         'mobile':True,
         'use_https': request.is_secure(),
         'site': get_current_site(request)

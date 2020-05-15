@@ -9,8 +9,8 @@ router.register(r'^city', views.CityView, basename='city')
 router.register(r'^signup', views.SignupView, basename='signup')
 router.register(r'^login', views.LoginView, basename='login')
 router.register(r'^changepassword', views.ChangePasswordView, basename='changepassword')
+router.register(r'^editprofile', views.EditProfileView, basename='editprofile')
 router.register(r'^resetpassword', views.PasswordResetView, basename='resetpassword')
-
 
 urlpatterns = [
     url(r'^', include(router.urls)),
