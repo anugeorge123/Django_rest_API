@@ -1,4 +1,4 @@
-import pyotp
+# import pyotp
 from accounts import utils as ut
 from rest_framework import viewsets
 from accounts.models import Country,State, City, User
@@ -109,8 +109,10 @@ class SignupView(viewsets.ModelViewSet):
         user.countryName = country_name
         user.stateName = state_name
         user.cityName = city_name
+        ut.confirmation_email(email, user)
         user.save()
         token, created = Token.objects.get_or_create(user=user)
+
         return Response(data={'status': status.HTTP_200_OK,'token':token.key},
                         status=status.HTTP_200_OK)
 

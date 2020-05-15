@@ -35,3 +35,11 @@ def password_reset_link_email(email, request):
     msg.content_subtype = "html"
     msg.send()
 
+
+def confirmation_email(email, request):
+    from_email = settings.EMAIL_HOST_USER
+    to = email
+    message =" This is a confirmation mail from sample project."
+    msg = EmailMessage('Welcome Email - Sample Project', message, from_email, [to])
+    msg.content_subtype = "html"
+    msg.send()
