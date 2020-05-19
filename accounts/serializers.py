@@ -125,3 +125,8 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         elif len(attrs['password']) > 16:
             raise ValidationError({'message': 'Password should not exceed more than 16 characters'})
         return attrs
+
+class SocialLoginSerializer(serializers.Serializer):
+    signup_method = serializers.CharField()
+    access_token = serializers.CharField()
+    access_token_secret = serializers.CharField(required=False)

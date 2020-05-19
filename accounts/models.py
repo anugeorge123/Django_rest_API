@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils.translation import ugettext as _
 
 class Country(models.Model):
     countryName = models.CharField(max_length=30)
@@ -46,3 +47,5 @@ class User(AbstractUser,TimeStampModel):
     cityName = models.ForeignKey(City,on_delete=models.CASCADE)
     otp = models.CharField(max_length=255, null=True, blank=True)
     rp_otp = models.CharField(max_length=255, null=True, blank=True)
+    email_verified =  models.BooleanField(_('Email verified'), default=False)
+    signup_method = models.CharField(max_length=255)

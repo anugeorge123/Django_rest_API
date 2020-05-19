@@ -1,4 +1,7 @@
 # import pyotp
+import os
+import requests
+import urllib.request
 from accounts import utils as ut
 from rest_framework import viewsets
 from accounts.models import Country,State, City, User
@@ -9,7 +12,7 @@ from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from .serializers import CountrySerializer, StateSerializer, CitySerializer, \
     UserSerializer, UserLoginSerializer, ChangePasswordSerializer, PasswordResetSerializer,\
-    PasswordResetConfirmSerializer, EditProfileSerializer
+    PasswordResetConfirmSerializer, EditProfileSerializer, SocialLoginSerializer
 
 class CountryView(viewsets.ModelViewSet):
     http_method_names = ['post', 'get']
@@ -232,6 +235,80 @@ class PasswordResetConfirmView(APIView):
             return Response(data={"message": "Your password has been reset successfully."}, status=status.HTTP_200_OK)
         else:
             return Response(data={'message': 'User not found'}, status=status.HTTP_401_UNAUTHORIZED)
+
+class SocialLoginView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        serializer = SocialLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        signup_method = serializer.data.get('signup_method')
+
+        # Facebook
+        if signup_method == 'facebook':
+            url = 'https://graph.facebook.com/v3.2/me?fields=id,name,email,picture&access_token=' + serializer.data["access_token"]
+            data = requests.get(url).json()
+            print("data ====>>>",data)
+            # check data values
+            email = data["email"]
+            username = data['name']
+            user = User.objects.filter(email=email)
+            if not user.exists():
+                user = User(email=email)
+                if len(username.split(' ')) > 1:
+                    user.first_name = username.split(' ')[0]
+                    user.last_name = username.split(' ')[1]
+                else:
+                    user.first_name = username
+
+                image_url = 'https://graph.facebook.com/' + data['id'] + '/picture?type=large'
+                img = urllib.request.urlretrieve(image_url, user.first_name + ".jpg")
+                user.userImage = img[0]
+                r = requests.get(image_url)
+                with open('media/'+ user.first_name + ".jpg", 'wb') as f:
+                    f.write(r.content)
+                os.remove(user.first_name + ".jpg")
+                user.username = email.split('@')[0].lower() + '_facebook'
+                user.email_verified = True
+                user.signup_method = signup_method
+                user.save()
+            else:
+                user = user[0]
+
+        # Google
+        if signup_method == 'google':
+            url = 'https://www.googleapis.com/oauth2/v1/userinfo?scope=email&access_token=' + serializer.data["access_token"]
+            s = 'https://www.googleapis.com/oauth2/v3/tokeninfo?id_token='+ serializer.data["access_token"]
+            r = requests.get(url).json()
+            print("dataaaa",r)
+            email = r["email"]
+            username = r['name']
+            user = User.objects.filter(email=email)
+            if not user.exists():
+                user = User(email=email)
+                if len(username.split(' ')) > 1:
+                    user.first_name = username.split(' ')[0]
+                    user.last_name = username.split(' ')[1]
+                else:
+                    user.first_name = username
+                image_url = r['picture']
+                img = urllib.request.urlretrieve(image_url, user.first_name + ".jpg")
+                user.profile_image = img[0]
+                r = requests.get(image_url)
+                with open('media/' + user.first_name + ".jpg", 'wb') as f:
+                    f.write(r.content)
+                user.username = email.split('@')[0].lower() + '_google'
+                user.email_verified = True
+                user.signup_method = signup_method
+                user.save()
+            else:
+                user = user[0]
+
+        token, created = Token.objects.get_or_create(user=user)
+
+        return Response(data={'response':{'access_token': token.key, "userId":user.id,},
+                              "message": "Login Successful",
+                              }, status=status.HTTP_200_OK)
 
 
 

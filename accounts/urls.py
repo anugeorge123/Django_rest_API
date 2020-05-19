@@ -12,7 +12,9 @@ router.register(r'^changepassword', views.ChangePasswordView, basename='changepa
 router.register(r'^editprofile', views.EditProfileView, basename='editprofile')
 router.register(r'^resetpassword', views.PasswordResetView, basename='resetpassword')
 
+
 urlpatterns = [
     url(r'^', include(router.urls)),
     url(r'^password-reset-confirm/', views.PasswordResetConfirmView.as_view()),
+    url(r'^social-login/',views.SocialLoginView.as_view()),
 ]
