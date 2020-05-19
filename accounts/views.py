@@ -246,9 +246,10 @@ class SocialLoginView(APIView):
 
         # Facebook
         if signup_method == 'facebook':
-            url = 'https://graph.facebook.com/v3.2/me?fields=id,name,email,picture&access_token=' + serializer.data["access_token"]
+            signup_method = serializer.data.get('signup_method')
+            access_token = serializer.data.get('access_token')
+            url = 'https://graph.facebook.com/v3.2/me?fields=id,name,email,picture&access_token=' + serializer.data['access_token']
             data = requests.get(url).json()
-            print("data ====>>>",data)
             # check data values
             email = data["email"]
             username = data['name']
@@ -265,7 +266,7 @@ class SocialLoginView(APIView):
                 img = urllib.request.urlretrieve(image_url, user.first_name + ".jpg")
                 user.userImage = img[0]
                 r = requests.get(image_url)
-                with open('media/'+ user.first_name + ".jpg", 'wb') as f:
+                with open('staticfiles/media/'+ user.first_name + ".jpg", 'wb') as f:
                     f.write(r.content)
                 os.remove(user.first_name + ".jpg")
                 user.username = email.split('@')[0].lower() + '_facebook'
@@ -280,7 +281,6 @@ class SocialLoginView(APIView):
             url = 'https://www.googleapis.com/oauth2/v1/userinfo?scope=email&access_token=' + serializer.data["access_token"]
             s = 'https://www.googleapis.com/oauth2/v3/tokeninfo?id_token='+ serializer.data["access_token"]
             r = requests.get(url).json()
-            print("dataaaa",r)
             email = r["email"]
             username = r['name']
             user = User.objects.filter(email=email)
@@ -295,7 +295,7 @@ class SocialLoginView(APIView):
                 img = urllib.request.urlretrieve(image_url, user.first_name + ".jpg")
                 user.profile_image = img[0]
                 r = requests.get(image_url)
-                with open('media/' + user.first_name + ".jpg", 'wb') as f:
+                with open('staticfiles/media/' + user.first_name + ".jpg", 'wb') as f:
                     f.write(r.content)
                 user.username = email.split('@')[0].lower() + '_google'
                 user.email_verified = True
@@ -303,7 +303,6 @@ class SocialLoginView(APIView):
                 user.save()
             else:
                 user = user[0]
-
         token, created = Token.objects.get_or_create(user=user)
 
         return Response(data={'response':{'access_token': token.key, "userId":user.id,},

@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.utils.translation import ugettext as _
 
 class Country(models.Model):
-    countryName = models.CharField(max_length=30)
+    countryName = models.CharField(max_length=30,null=True, blank=True)
 
     def __str__(self):
         return self.countryName
@@ -13,8 +13,8 @@ class Country(models.Model):
 
 
 class State(models.Model):
-    stateName = models.CharField(max_length=30)
-    countryName = models.ForeignKey(Country,on_delete=models.CASCADE)
+    stateName = models.CharField(max_length=30,null=True, blank=True)
+    countryName = models.ForeignKey(Country,on_delete=models.CASCADE,)
 
     def __str__(self):
         return self.stateName
@@ -24,7 +24,7 @@ class State(models.Model):
 
 
 class City(models.Model):
-    cityName  = models.CharField(max_length=30)
+    cityName  = models.CharField(max_length=30,null=True, blank=True)
     stateName = models.ForeignKey(State,on_delete=models.CASCADE)
 
     def __str__(self):
@@ -42,9 +42,9 @@ class TimeStampModel(models.Model):
 class User(AbstractUser,TimeStampModel):
     userImage = models.FileField(upload_to='images/', max_length=254)
     phone = models.CharField(max_length = 12)
-    countryName = models.ForeignKey(Country,on_delete=models.CASCADE)
-    stateName = models.ForeignKey(State,on_delete=models.CASCADE)
-    cityName = models.ForeignKey(City,on_delete=models.CASCADE)
+    countryName = models.ForeignKey(Country,on_delete=models.CASCADE,null=True, blank=True)
+    stateName = models.ForeignKey(State,on_delete=models.CASCADE,null=True, blank=True)
+    cityName = models.ForeignKey(City,on_delete=models.CASCADE,null=True, blank=True)
     otp = models.CharField(max_length=255, null=True, blank=True)
     rp_otp = models.CharField(max_length=255, null=True, blank=True)
     email_verified =  models.BooleanField(_('Email verified'), default=False)
