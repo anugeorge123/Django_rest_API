@@ -38,9 +38,18 @@ class TimeStampModel(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
+class UserRole(models.Model):
+    role = models.CharField(max_length = 30,null=True, blank=True)
+
+    def __str__(self):
+        return self.role
+
+    class Meta:
+        verbose_name_plural = ('User Role')
+
 
 class User(AbstractUser,TimeStampModel):
-    userImage = models.FileField(upload_to='images/', max_length=254)
+    userImage = models.FileField(upload_to='images/', max_length=254,null=True, blank=True)
     phone = models.CharField(max_length = 12)
     countryName = models.ForeignKey(Country,on_delete=models.CASCADE,null=True, blank=True)
     stateName = models.ForeignKey(State,on_delete=models.CASCADE,null=True, blank=True)
@@ -48,4 +57,11 @@ class User(AbstractUser,TimeStampModel):
     otp = models.CharField(max_length=255, null=True, blank=True)
     rp_otp = models.CharField(max_length=255, null=True, blank=True)
     email_verified =  models.BooleanField(_('Email verified'), default=False)
-    signup_method = models.CharField(max_length=255)
+    signup_method = models.CharField(max_length=255,null=True, blank=True)
+    role = models.ForeignKey(UserRole,on_delete=models.CASCADE,null=True, blank=True)
+
+    def __str__(self):
+        return self.username
+
+    class Meta:
+        verbose_name_plural = ('User')

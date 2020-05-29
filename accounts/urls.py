@@ -11,6 +11,7 @@ router.register(r'^login', views.LoginView, basename='login')
 router.register(r'^changepassword', views.ChangePasswordView, basename='changepassword')
 router.register(r'^editprofile', views.EditProfileView, basename='editprofile')
 router.register(r'^resetpassword', views.PasswordResetView, basename='resetpassword')
+router.register(r'^widget', views.WidgetView, basename='widget')
 
 
 urlpatterns = [

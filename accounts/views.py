@@ -4,7 +4,7 @@ import requests
 import urllib.request
 from accounts import utils as ut
 from rest_framework import viewsets
-from accounts.models import Country,State, City, User
+from accounts.models import Country,State, City, User, UserRole
 from rest_framework.response import Response
 from rest_framework import viewsets, status, permissions
 from rest_framework.authtoken.models import Token
@@ -12,7 +12,8 @@ from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from .serializers import CountrySerializer, StateSerializer, CitySerializer, \
     UserSerializer, UserLoginSerializer, ChangePasswordSerializer, PasswordResetSerializer,\
-    PasswordResetConfirmSerializer, EditProfileSerializer, SocialLoginSerializer
+    PasswordResetConfirmSerializer, EditProfileSerializer, SocialLoginSerializer, WidgetSerializer
+from datetime import date, timedelta
 
 class CountryView(viewsets.ModelViewSet):
     http_method_names = ['post', 'get']
@@ -130,14 +131,17 @@ class LoginView(viewsets.ModelViewSet):
             uname = serializer.data.get('username')
             username = User.objects.get(username = uname)
             pwd = serializer.data.get('password')
-
             user = authenticate(username=username, password=pwd)
+
             token, created = Token.objects.get_or_create(user=user)
             if not user:
                 return Response({'message': 'Invalid credentials'},
                                 status=status.HTTP_401_UNAUTHORIZED)
             else :
-                return Response(data={'status': status.HTTP_200_OK,'message': 'Success','token': token.key},status=status.HTTP_200_OK)
+                roleObj = User.objects.filter(username = uname).values('role')
+                role = UserRole.objects.filter(id = roleObj[0]['role']).values('role')
+                userRole = role[0]['role']
+                return Response(data={'status': status.HTTP_200_OK,'message': 'Success','user_role':userRole,'token': token.key},status=status.HTTP_200_OK)
 
 
 class ChangePasswordView(viewsets.ViewSet):
@@ -309,5 +313,66 @@ class SocialLoginView(APIView):
                               "message": "Login Successful",
                               }, status=status.HTTP_200_OK)
 
+
+class WidgetView(viewsets.ViewSet):
+    serializer_class = WidgetSerializer
+    http_method_names = ['get']
+    permission_classes = (permissions.AllowAny,)
+
+    def list(self, request, **kwargs):
+        agentObj = UserRole.objects.filter(role="Agent")
+        agent = User.objects.filter(role = agentObj[0].id)
+        agentCount=0
+        for i in agent:
+            agentCount=agentCount+1
+
+        partnerObj = UserRole.objects.filter(role="Partner")
+        partner = User.objects.filter(role=partnerObj[0].id)
+        partnerCount = 0
+        for i in partner:
+            partnerCount = partnerCount + 1
+
+
+        city = City.objects.all().count()
+
+        recentPartnerObj = User.objects.all().order_by('-created')[:5]
+        recentPartner =[]
+        for i in recentPartnerObj:
+            recentPartner.append(i.username)
+
+        cityCount = []
+
+        cityObj = City.objects.all()
+        for i in cityObj:
+            citydict = {}
+            print(i,"cityyyyy",i.cityName)
+            cityCountObj = User.objects.filter(cityName = i).count()
+            print("city no: ",cityCountObj)
+            citydict[i.cityName] = cityCountObj
+            cityCount.append(citydict)
+        print(cityCount,"dictionary")
+
+        stateCount = []
+        stateObj = State.objects.all()
+        for j in stateObj:
+            dict = {}
+            print(j, "state", j.stateName)
+            stateCountObj = User.objects.filter(stateName=j).count()
+            print("state no: ", stateCountObj)
+            dict[j.stateName] = stateCountObj
+            stateCount.append(dict)
+        print(stateCount, "statee")
+
+
+
+        d = date.today() - timedelta(days=7)
+        totalUsers = User.objects.all().count()
+        k = User.objects.filter(created__gte=d).count()
+        avg = (k/totalUsers)*100
+        print((type(avg)))
+        average = float("%.2f" % avg)
+        return Response(data={'totalAgents': agentCount, 'totalPartners': partnerCount, \
+                              'totalCities': city, 'recentPartnerAverage': average, \
+                               'cityWiseData':cityCount,'stateWiseData':stateCount,"status": status.HTTP_200_OK}, status=status.HTTP_200_OK, )
 
 

@@ -129,3 +129,10 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 class SocialLoginSerializer(serializers.Serializer):
     signup_method = serializers.CharField()
     access_token = serializers.CharField()
+
+
+class WidgetSerializer(serializers.Serializer):
+    total_agents = serializers.CharField()
+    total_partners = serializers.CharField()
+    total_cities = serializers.CharField()
+    recent_partners = serializers.CharField()
